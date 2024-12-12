@@ -21,7 +21,7 @@ const { fillLoginForm } = require('./fillLoginForm');
     let connection;
 
     try {
-        browser = await puppeteer.launch({ headless: false });
+        browser = await puppeteer.launch({ headless: true });
         const page = await browser.newPage();
 
         connection = await mysql.createConnection({
