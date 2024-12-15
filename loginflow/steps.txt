@@ -1,0 +1,20 @@
+mysql -u your_username -p
+it should prompt for password
+
+
+CREATE DATABASE puppeteer_data;
+
+USE puppeteer_data;
+
+CREATE TABLE navigation_flows (
+    flow_id INT AUTO_INCREMENT PRIMARY KEY,
+    home_page_time FLOAT DEFAULT NULL,
+    login_page_time FLOAT DEFAULT NULL,
+    dashboard_page_time FLOAT DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+
+npm install nodemailer puppeteer mysql2
+
+

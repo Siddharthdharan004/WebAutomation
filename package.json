@@ -10,6 +10,7 @@
   "description": "",
   "dependencies": {
     "mysql2": "^3.11.5",
-    "puppeteer": "^23.10.3"
+    "nodemailer": "^6.9.16",
+    "puppeteer": "^23.10.4"
   }
 }
