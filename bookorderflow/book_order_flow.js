@@ -1,45 +1,167 @@
 const puppeteer = require('puppeteer');
+const mysql = require('mysql2/promise');
 
 (async () => {
-  const browser = await puppeteer.launch({ headless: false }); // Set to true for headless mode
-  const page = await browser.newPage();
+    const inputURL = process.argv[2] || 'https://notionpress.com/';
+    let flowId;
 
-  // Step 1: Navigate to the website "notionpress.com"
-  await page.goto('https://notionpress.com');
+    try {
+        const browser = await puppeteer.launch({ headless: false, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+        const page = await browser.newPage();
 
-  // Step 2: Click the login button to move to the login page
-  await page.waitForSelector('a[href="/login"]'); // Adjust selector if necessary
-  await page.click('a[href="/login"]');
+        // Set mobile emulation manually for the main page
+        const mobileViewport = {
+            width: 390, // iPhone 12 width
+            height: 844, // iPhone 12 height
+            isMobile: true,
+            hasTouch: true,
+        };
 
-  // Wait for login page and confirm welcome text
-  await page.waitForSelector('h1'); // Assuming there is an H1 tag with welcome text
-  const welcomeText = await page.$eval('h1', el => el.textContent);
-  console.log(`Welcome text: ${welcomeText}`);
+        const mobileUserAgent =
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1';
 
-  // Step 3: Enter credentials and click login button
-  await page.type('#email', 'your_mail@notionpress.com'); // Replace with actual email input field selector
-  await page.type('#password', 'your_password'); // Replace with actual password input field selector
-  await page.click('#login-button'); // Replace with actual login button selector
+        await page.setViewport(mobileViewport);
+        await page.setUserAgent(mobileUserAgent);
 
-  // Step 4: Handle popup
-  try {
-    await page.waitForSelector('.popup-class-selector', { timeout: 5000 }); // Replace with actual popup selector
-    console.log('Popup detected!');
-    await page.click('.popup-ok-button-selector'); // Replace with the popup OK button selector
-    console.log('Popup handled.');
-  } catch (e) {
-    console.log('No popup detected.');
-  }
+        if (!isValidURL(inputURL)) {
+            throw new Error("Invalid URL provided.");
+        }
 
-  // Step 5: Check for books sold amount and total earnings
-  await page.waitForSelector('#menu1 > div.row > div.col-lg-6.col-md-6.col-12.m-0 > div.col-lg-12.col-md-12.col-12.m-0.row.sales_insight > div:nth-child(2) > div.earning_info > span'); // Replace with actual selector for total books sold
-  const booksSold = await page.$eval('#menu1 > div.row > div.col-lg-6.col-md-6.col-12.m-0 > div.col-lg-12.col-md-12.col-12.m-0.row.sales_insight > div:nth-child(2) > div.earning_info > span', el => el.textContent);
+        console.log(`Navigating to URL: ${inputURL}`);
+        flowId = await createFlow();
 
-  await page.waitForSelector('#menu1 > div.row > div.col-lg-6.col-md-6.col-12.m-0 > div.col-lg-12.col-md-12.col-12.m-0.row.sales_insight > div:nth-child(1) > div.earning_info > label'); // Replace with actual selector for total earnings
-  const totalEarnings = await page.$eval('#menu1 > div.row > div.col-lg-6.col-md-6.col-12.m-0 > div.col-lg-12.col-md-12.col-12.m-0.row.sales_insight > div:nth-child(1) > div.earning_info > label', el => el.textContent);
+        // Step 1: Navigate to the Home Page
+        let startTime = Date.now();
+        await page.goto(inputURL, { timeout: 60000, waitUntil: 'networkidle2' });
+        const homePageTime = (Date.now() - startTime) / 1000;
+        console.log(`Home Page Loaded in ${homePageTime} seconds`);
+        await saveFlowTime(flowId, 'home_page_time', homePageTime);
 
-  console.log(`Books Sold: ${booksSold}`);
-  console.log(`Total Earnings: ${totalEarnings}`);
+        // Step 2: Click Login
+        startTime = Date.now();
+        await page.waitForSelector('a[href$="login"]', { visible: true, timeout: 30000 });
+        await page.click('a[href$="login"]');
+        await page.waitForSelector('#email', { visible: true, timeout: 30000 });
+        const loginPageTime = (Date.now() - startTime) / 1000;
+        console.log(`Login Page Loaded in ${loginPageTime} seconds`);
+        await saveFlowTime(flowId, 'login_page_time', loginPageTime);
 
-  await browser.close();
+        // Step 3: Enter Credentials and Login
+        await page.type('#email', 'classics1@notionpress.com');
+        await page.type('#dpassword', 'notion123');
+        await page.click('#login');
+        await page.waitForSelector('h2', { visible: true, timeout: 30000 });
+        console.log("Logged in successfully");
+
+        // Step 4: Handle Password Manager Popup Robustly
+        async function handlePasswordPopup(page) {
+            try {
+                const popupSelector = 'button[aria-label="OK"]';
+                const isPopupVisible = await page.$(popupSelector);
+                if (isPopupVisible) {
+                    await page.click(popupSelector);
+                    console.log("Clicked OK on the password manager popup.");
+                }
+            } catch (error) {
+                console.log("Password manager popup not found or already dismissed.");
+            }
+        }
+        await handlePasswordPopup(page);
+
+        // Step 5: Check Lifetime Earnings and Total Books Sold
+        const lifetimeEarnings = await page.$eval('span#life_earning', el => el.textContent);
+        const totalBooksSold = await page.$eval('span.totalearnings.value', el => el.textContent);
+        console.log(`Lifetime Earnings: ${lifetimeEarnings}, Total Books Sold: ${totalBooksSold}`);
+
+        // Step 6: Click 'Order Author Copies' Button and Switch to New Page
+        startTime = Date.now();
+        console.log("Clicking 'Order Author Copies' button...");
+
+        const [newPage] = await Promise.all([
+            new Promise(resolve => {
+                browser.once('targetcreated', async target => {
+                    const page = await target.page();
+                    resolve(page);
+                });
+            }),
+            page.waitForSelector('a[href*="postpub/authorcopy"]', { visible: true, timeout: 30000 }),
+            page.click('a[href*="postpub/authorcopy"]')
+        ]);
+
+        if (!newPage) {
+            throw new Error("Failed to open the new page for 'Order Author Copies'.");
+        }
+
+        // Set mobile emulation for the new page
+        await newPage.setViewport(mobileViewport);
+        await newPage.setUserAgent(mobileUserAgent);
+        await newPage.bringToFront();
+        console.log("Opened 'Order Author Copies' page in a new tab with mobile view.");
+
+        // Step 7: Wait for and Click 'Order Copies Now'
+        console.log("Clicking 'Order Copies Now' button...");
+        await newPage.waitForSelector('button[ng-click*="redirect_authorcopy"]', { visible: true, timeout: 30000 });
+        await newPage.click('button[ng-click*="redirect_authorcopy"]');
+        console.log("Clicked 'Order Copies Now' button.");
+
+        // Step 8: Wait for Navigation to Next Page
+        await newPage.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 });
+        console.log("Navigated to the next page after clicking 'Order Copies Now'.");
+
+        // Step 9: Confirm Success
+        const nextPageSelector = 'h1';
+        await newPage.waitForSelector(nextPageSelector, { visible: true, timeout: 30000 });
+        console.log("Next page loaded successfully.");
+
+        console.log("Automation completed successfully.");
+        await browser.close();
+    } catch (err) {
+        console.error('Error:', err);
+    }
 })();
+
+function isValidURL(string) {
+    try {
+        new URL(string);
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+async function createFlow() {
+    const connection = await mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: 'admin',
+        database: 'puppeteer_data'
+    });
+
+    try {
+        const [results] = await connection.execute(
+            'INSERT INTO book_order_flows (home_page_time, login_page_time, order_author_copies_time) VALUES (NULL, NULL, NULL)'
+        );
+        console.log(`New flow created with ID: ${results.insertId}`);
+        return results.insertId;
+    } finally {
+        await connection.end();
+    }
+}
+
+async function saveFlowTime(flowId, column, time) {
+    const connection = await mysql.createConnection({
+        host: 'localhost',
+        user: 'root',
+        password: 'admin',
+        database: 'puppeteer_data'
+    });
+
+    try {
+        await connection.execute(
+            `UPDATE book_order_flows SET ${column} = ? WHERE flow_id = ?`,
+            [time, flowId]
+        );
+    } finally {
+        await connection.end();
+    }
+}
