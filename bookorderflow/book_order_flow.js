@@ -17,8 +17,8 @@ const puppeteer = require('puppeteer');
   console.log(`Welcome text: ${welcomeText}`);
 
   // Step 3: Enter credentials and click login button
-  await page.type('#email', 'classics1@notionpress.com'); // Replace with actual email input field selector
-  await page.type('#password', 'notion123'); // Replace with actual password input field selector
+  await page.type('#email', 'your_mail@notionpress.com'); // Replace with actual email input field selector
+  await page.type('#password', 'your_password'); // Replace with actual password input field selector
   await page.click('#login-button'); // Replace with actual login button selector
 
   // Step 4: Handle popup
