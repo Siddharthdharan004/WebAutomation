@@ -32,8 +32,8 @@ const mysql = require('mysql2/promise');
         await saveFlowTime(flowId, 'login_page_time', loginPageTime);
 
         // Step 3: Enter Credentials and Login
-        await page.type('#email', 'classics1@notionpress.com');
-        await page.type('#dpassword', 'notion123');
+        await page.type('#email', 'yourmail@gmail.com');
+        await page.type('#dpassword', 'yourpassword');
         await page.click('#login');
         await page.waitForSelector('h2', { visible: true, timeout: 30000 });
         console.log("Logged in successfully");
