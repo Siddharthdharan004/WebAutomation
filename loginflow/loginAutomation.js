@@ -8,11 +8,11 @@ const EMAIL_SETTINGS = {
     port: 587,
     secure: false,
     auth: {
-        user: "siddharthsprofessional@gmail.com", // Replace with your email
-        pass: "ltxh rbls hrym jfll" // Replace with your app password "https://accounts.google.com/v3/signin/challenge/pwd?TL=AKOx4s1FESaS5PJC6Rk7GSCKJP95ThDTodERZXs7J43HsZ0Kq2tBKfVD0Oxnzn6E&cid=2&continue=https%3A%2F%2Fmyaccount.google.com%2Fu%2F1%2Fapppasswords%3Fcontinue%3Dhttps%3A%2F%2Fmyaccount.google.com%2Fu%2F1%2Fsecurity%3Fgar%253DWzEyMF0%2526hl%253Den%2526utm_source%253DOGB%2526utm_medium%253Dact&flowName=GlifWebSignIn&followup=https%3A%2F%2Fmyaccount.google.com%2Fu%2F1%2Fapppasswords%3Fcontinue%3Dhttps%3A%2F%2Fmyaccount.google.com%2Fu%2F1%2Fsecurity%3Fgar%253DWzEyMF0%2526hl%253Den%2526utm_source%253DOGB%2526utm_medium%253Dact&ifkv=AcMMx-ewWzkfIFCJCAxm27HN-9UfFrmVX5oddijy6pTeMjtGHCFEXvY0h3nwAv11D7H1fyHoP9_Q&osid=1&rart=ANgoxcc_fOmc7fyN7HSD5Wvl8LFB0BZPji3e10lsx3XT18frhN_uGEUIyGrSdeluZfSHiQDgGztBUrXCg5UrpkkfV7TJGkJoGOMS5J00k02RuSLOTvs0pwY&rpbg=1&service=accountsettings"
+        user: "your_mail@gmail.com", // Replace with your email
+        pass: "your_app_password" // Replace with your app password "https://accounts.google.com/v3/signin/challenge/pwd?TL=AKOx4s1FESaS5PJC6Rk7GSCKJP95ThDTodERZXs7J43HsZ0Kq2tBKfVD0Oxnzn6E&cid=2&continue=https%3A%2F%2Fmyaccount.google.com%2Fu%2F1%2Fapppasswords%3Fcontinue%3Dhttps%3A%2F%2Fmyaccount.google.com%2Fu%2F1%2Fsecurity%3Fgar%253DWzEyMF0%2526hl%253Den%2526utm_source%253DOGB%2526utm_medium%253Dact&flowName=GlifWebSignIn&followup=https%3A%2F%2Fmyaccount.google.com%2Fu%2F1%2Fapppasswords%3Fcontinue%3Dhttps%3A%2F%2Fmyaccount.google.com%2Fu%2F1%2Fsecurity%3Fgar%253DWzEyMF0%2526hl%253Den%2526utm_source%253DOGB%2526utm_medium%253Dact&ifkv=AcMMx-ewWzkfIFCJCAxm27HN-9UfFrmVX5oddijy6pTeMjtGHCFEXvY0h3nwAv11D7H1fyHoP9_Q&osid=1&rart=ANgoxcc_fOmc7fyN7HSD5Wvl8LFB0BZPji3e10lsx3XT18frhN_uGEUIyGrSdeluZfSHiQDgGztBUrXCg5UrpkkfV7TJGkJoGOMS5J00k02RuSLOTvs0pwY&rpbg=1&service=accountsettings"
     }
 };
-const ALERT_RECIPIENT = "siddharth.intern@notionpress.com"; // Replace with recipient email
+const ALERT_RECIPIENT = "your_send_to_mail@gmail.com"; // Replace with recipient email
 
 (async () => {
     let flowId;
@@ -41,8 +41,8 @@ const ALERT_RECIPIENT = "siddharth.intern@notionpress.com"; // Replace with reci
 
         // Dashboard Page Navigation
         startTime = Date.now();
-        await page.type('#email', 'classics1@notionpress.com');
-        await page.type('input#dpassword', 'notion123');
+        await page.type('#email', 'mail@notionpress.com');
+        await page.type('input#dpassword', 'your_password');
         await page.waitForSelector('input#login', { visible: true, timeout: 30000 });
         const submitButton = await page.$('input#login');
         await submitButton.evaluate(button => button.click());
