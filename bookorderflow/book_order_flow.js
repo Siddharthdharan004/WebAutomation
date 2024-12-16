@@ -45,9 +45,15 @@ const mysql = require('mysql2/promise');
         console.log(`Login Page Loaded in ${loginPageTime} seconds`);
         await saveFlowTime(flowId, 'login_page_time', loginPageTime);
 
+<<<<<<< HEAD
         // Step 4: Enter Credentials and Login
         await page.type('#email', 'yourmail@notionpress.com');
         await page.type('#dpassword', 'your_password');
+=======
+        // Step 3: Enter Credentials and Login
+        await page.type('#email', 'yourmail@gmail.com');
+        await page.type('#dpassword', 'yourpassword');
+>>>>>>> 071341288249b717e96bee422a2e6f677b805092
         await page.click('#login');
         await page.waitForSelector('h2', { visible: true, timeout: 30000 });
         console.log("Logged in successfully");
