@@ -2,27 +2,41 @@ const puppeteer = require('puppeteer');
 const mysql = require('mysql2/promise');
 
 (async () => {
-    const inputURL = process.argv[2] || 'https://notionpress.com';
+    const inputURL = process.argv[2] || 'your_URL';
     let flowId;
 
     try {
-        const browser = await puppeteer.launch({ headless: false });
+        const browser = await puppeteer.launch({ headless: false, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
         const page = await browser.newPage();
+
+        // Set mobile emulation manually
+        await page.setViewport({
+            width: 390, // iPhone 12 width
+            height: 844, // iPhone 12 height
+            isMobile: true,
+            hasTouch: true,
+        });
+
+        // Set a custom user agent for mobile
+        await page.setUserAgent(
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1'
+        );
 
         if (!isValidURL(inputURL)) {
             throw new Error("Invalid URL provided.");
         }
 
+        console.log(`Navigating to URL: ${inputURL}`);
         flowId = await createFlow();
 
         // Step 1: Navigate to the Home Page
         let startTime = Date.now();
-        await page.goto(inputURL, { timeout: 60000 });
+        await page.goto(inputURL, { timeout: 60000, waitUntil: 'networkidle2' });
         const homePageTime = (Date.now() - startTime) / 1000;
         console.log(`Home Page Loaded in ${homePageTime} seconds`);
         await saveFlowTime(flowId, 'home_page_time', homePageTime);
 
-        // Step 2: Click Login
+        // Step 3: Click Login
         startTime = Date.now();
         await page.waitForSelector('a[href$="login"]', { visible: true, timeout: 30000 });
         await page.click('a[href$="login"]');
@@ -31,42 +45,38 @@ const mysql = require('mysql2/promise');
         console.log(`Login Page Loaded in ${loginPageTime} seconds`);
         await saveFlowTime(flowId, 'login_page_time', loginPageTime);
 
-        // Step 3: Enter Credentials and Login
-        await page.type('#email', 'classics1@notionpress.com');
-        await page.type('#dpassword', 'notion123');
+        // Step 4: Enter Credentials and Login
+        await page.type('#email', 'yourmail@notionpress.com');
+        await page.type('#dpassword', 'your_password');
         await page.click('#login');
         await page.waitForSelector('h2', { visible: true, timeout: 30000 });
         console.log("Logged in successfully");
 
-        // Step 4: Check Lifetime Earnings and Total Books Sold
-        const lifetimeEarnings = await page.$eval('#life_earning , .value , h3', el => el.textContent);
-        const totalBooksSold = await page.$eval('h3 , .value', el => el.textContent);
-        console.log(`Lifetime Earnings: ${lifetimeEarnings}, Total Books Sold: ${totalBooksSold}`);
+        
 
-        // Step 5: Click Order Author Copies
+        await page.waitForSelector('a h3', { visible: true, timeout: 30000 });
         await page.click('a h3');
-        await page.waitForSelector('.ng-scope', { visible: true, timeout: 30000 });
-
-        // Step 6: Select a Book
-        await page.select('button , h1'); 
-        console.log("Book selected");
-
-        // Step 7: Check Shipping Address
-        const shippingAddress = await page.$eval('.shipping-address', el => el.textContent);
-        console.log(`Shipping Address: ${shippingAddress}`);
-
-        // Step 8: Check Verification
-        const verificationStatus = await page.$eval('.verification-status', el => el.textContent);
-        console.log(`Verification Status: ${verificationStatus}`);
-
-        // Step 9: Click Order Now
-        await page.click('button#order-now');
-
-        // Step 10: Ensure Contact Details Form is Shown
-        await page.waitForSelector('.contact-details-form', { visible: true, timeout: 30000 });
-        console.log("Contact details form displayed");
-
-        console.log("Book order flow completed successfully.");
+        await page.waitForSelector('.popup-class-or-element', { timeout: 5000 }).catch(() => {
+            console.log("Popup not found within the timeout.");
+          });
+        
+          // Auto-click the OK button
+          try {
+            await page.click('body[ng-app="notionpress"][ng-controller="notionpress_controller"]'); // Replace with the actual class or selector
+            console.log("Clicked OK on the password manager popup.");
+          } catch (error) {
+            console.log("Failed to click the OK button: ", error);
+          }
+         
+        // Step 5: Check Lifetime Earnings and Total Books Sold
+        const lifetimeEarnings = await page.$eval('span#life_earning', el => el.textContent);
+        const totalBooksSold = await page.$eval('span.totalearnings.value', el => el.textContent);
+        console.log(`Lifetime Earnings: ${lifetimeEarnings}, Total Books Sold: ${totalBooksSold}`);
+        await page.waitForSelector('p', { visible: true, timeout: 30000 })
+        console.log(`order book page Loaded in ${orderbookpage} seconds`);
+        console.log('order book page loaded')
+        
+        console.log("Automation completed successfully.");
         await browser.close();
 
     } catch (err) {
