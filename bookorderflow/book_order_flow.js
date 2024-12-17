@@ -104,15 +104,71 @@ const mysql = require('mysql2/promise');
         await newPage.click('button[ng-click*="redirect_authorcopy"]');
         console.log("Clicked 'Order Copies Now' button.");
 
-        // Step 8: Wait for Navigation to Next Page
-        await newPage.waitForNavigation({ waitUntil: 'networkidle2', timeout: 30000 });
-        console.log("Navigated to the next page after clicking 'Order Copies Now'.");
+        // Step 8: Wait for the Claim Popup and Click
+        console.log("Attempting to click the 'Claim Popup' button...");
+        const claimPopupSelector = 'a#claim_popup';
 
-        // Step 9: Confirm Success
-        const nextPageSelector = 'h1';
-        await newPage.waitForSelector(nextPageSelector, { visible: true, timeout: 30000 });
-        console.log("Next page loaded successfully.");
+        try {
+            await newPage.waitForSelector(claimPopupSelector, { visible: true, timeout: 3000 });
+            await newPage.click(claimPopupSelector);
+            console.log("Successfully clicked the 'Claim Popup' button.");
+        } catch (error) {
+            console.error("Failed to click the 'Claim Popup' button:", error);
+        }
 
+        // Step 9: Wait for the 'Continue' Button and Click
+        console.log("Attempting to click the 'Continue' button...");
+        const continueButtonSelector = 'a[data-dismiss="modal"]';
+
+        try {
+            await newPage.waitForSelector(continueButtonSelector, { visible: true, timeout: 3000 });
+            await newPage.click(continueButtonSelector);
+            console.log("Successfully clicked the 'Continue' button.");
+        } catch (error) {
+            console.error("Failed to click the 'Continue' button:", error);
+        }
+
+        // Step 10: Select Address Option Before Scrolling
+        console.log("Selecting the desired address radio button...");
+        const addressSelector = 'input#addr_150276';
+        try {
+            await newPage.waitForSelector(addressSelector, { visible: true, timeout: 30000 });
+            await newPage.click(addressSelector);
+            console.log("Successfully selected the address radio button.");
+        } catch (error) {
+            console.error("Failed to select the address radio button:", error);
+        }
+
+        // Step 11: Check Verification Checkbox with ScrollIntoView
+        console.log("Selecting the verification checkbox...");
+        const verificationCheckboxSelector = 'input#ffverify';
+        try {
+            await newPage.evaluate(selector => {
+                const element = document.querySelector(selector);
+                if (element) {
+                    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    element.click();
+                }
+            }, verificationCheckboxSelector);
+            console.log("Successfully selected the verification checkbox.");
+        } catch (error) {
+            console.error("Failed to select the verification checkbox:", error);
+        }
+
+        // Step 12: Scroll and Click the 'Order Now' Button
+        console.log("Scrolling down to find the 'Order Now' button...");
+        const orderNowSelector = 'button#ordernowbutton';
+        try {
+            await newPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+            await newPage.waitForSelector(orderNowSelector, { visible: true, timeout: 30000 });
+            await newPage.click(orderNowSelector);
+            console.log("Successfully clicked the 'Order Now' button.");
+        } catch (error) {
+            console.error("Failed to click the 'Order Now' button:", error);
+        }
+
+        // Step 5: Confirm Success Message
+        const successMessage = await newPage.$eval('h3', el => el.textContent.trim());
         console.log("Automation completed successfully.");
         await browser.close();
     } catch (err) {
