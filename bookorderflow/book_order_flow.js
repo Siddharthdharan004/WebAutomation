@@ -6,7 +6,20 @@ const mysql = require('mysql2/promise');
     let flowId;
 
     try {
-        const browser = await puppeteer.launch({ headless: false, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+        const browser = await puppeteer.launch({ headless: false, args: ["--disable-gpu",
+            "--no-sandbox",
+            "--disable-dev-shm-usage",
+            "--disable-setuid-sandbox",
+            "--disable-software-rasterizer",
+            "--enable-chrome-browser-cloud-management",
+            "--disable-blink-features=AutomationControlled",
+            "--disable-notifications",
+            "--disable-infobars",
+            "--disable-popup-blocking",
+            "--suppress-message-center-popups",
+            "--disable-save-password-bubble"
+            ] });
+        
         const page = await browser.newPage();
 
         // Set mobile emulation manually for the main page
@@ -158,19 +171,45 @@ const mysql = require('mysql2/promise');
         // Step 12: Scroll and Click the 'Order Now' Button
         console.log("Scrolling down to find the 'Order Now' button...");
         const orderNowSelector = 'button#ordernowbutton';
+        const totalPayableSelectorBefore = 'span.totalPayable'; // Selector for value before clicking
+        const totalPayableSelectorAfter = 'div.inset-0.number-flip[data-value="1555"]'; // Selector for value after clicking
+
         try {
+            // Scroll to the bottom and wait for the 'Order Now' button
             await newPage.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
             await newPage.waitForSelector(orderNowSelector, { visible: true, timeout: 30000 });
+
+            // Capture the value before clicking 'Order Now'
+            const totalPayableBefore = await newPage.$eval(totalPayableSelectorBefore, el => el.textContent.trim());
+            console.log(`Total payable amount before clicking 'Order Now': ${totalPayableBefore}`);
+
+            // Click the 'Order Now' button
+            console.log("Clicking 'Order Now' button...");
             await newPage.click(orderNowSelector);
             console.log("Successfully clicked the 'Order Now' button.");
+
+            // Wait for the updated value to appear after clicking 'Order Now'
+            console.log("Waiting for the updated value after clicking 'Order Now'...");
+            await newPage.waitForSelector(totalPayableSelectorAfter, { visible: true, timeout: 30000 });
+
+            // Capture the value after clicking 'Order Now'
+            const totalPayableAfter = await newPage.$eval(totalPayableSelectorAfter, el => el.textContent.trim());
+            console.log(`Total payable amount after clicking 'Order Now': ${totalPayableAfter}`);
+
+            // Compare the values
+            if (totalPayableBefore === totalPayableAfter) {
+                console.log("They are the same, so the flow is a success.");
+            } else {
+                console.error("Error: Values before and after clicking 'Order Now' do not match.");
+            }
         } catch (error) {
-            console.error("Failed to click the 'Order Now' button:", error);
+            console.error("Failed during the 'Order Now' button flow:", error);
         }
 
-        // Step 5: Confirm Success Message
-        const successMessage = await newPage.$eval('h3', el => el.textContent.trim());
-        console.log("Automation completed successfully.");
-        await browser.close();
+
+
+
+        await browser.close(); // Close browser after the flow
     } catch (err) {
         console.error('Error:', err);
     }
@@ -181,6 +220,7 @@ function isValidURL(string) {
         new URL(string);
         return true;
     } catch (_) {
+
         return false;
     }
 }
