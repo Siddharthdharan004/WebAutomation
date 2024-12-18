@@ -172,7 +172,7 @@ const mysql = require('mysql2/promise');
         console.log("Scrolling down to find the 'Order Now' button...");
         const orderNowSelector = 'button#ordernowbutton';
         const totalPayableSelectorBefore = 'span.totalPayable'; // Selector for value before clicking
-        const totalPayableSelectorAfter = 'div.inset-0.number-flip[data-value="1555"]'; // Selector for value after clicking
+        const totalPayableSelectorAfter = 'div.inset-0.number-flip'; // Selector for value after clicking
 
         try {
             // Scroll to the bottom and wait for the 'Order Now' button
@@ -205,9 +205,6 @@ const mysql = require('mysql2/promise');
         } catch (error) {
             console.error("Failed during the 'Order Now' button flow:", error);
         }
-
-
-
 
         await browser.close(); // Close browser after the flow
     } catch (err) {
